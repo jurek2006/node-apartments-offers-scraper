@@ -6,23 +6,22 @@ const puppeteer = require("puppeteer");
   page.setUserAgent(
     "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0"
   );
-  await page.goto(
-    "https://www.olx.pl/oferta/wynajme-mieszkanie-2-pokojowe-od-1-12-2019-CID3-IDCq9W5.html"
-  );
+  await page.goto("https://www.olx.pl/nieruchomosci/mieszkania/wynajem/olawa/");
 
   //   await page.screenshot({ path: "example.png" });
 
-  let title = await page.evaluate(() =>
-    Array.from(document.querySelectorAll(".offer-titlebox h1")).map(
-      el => el.innerText
-    )
+  //   get without promoted offers:
+  // Array.from(document.querySelectorAll("table.offers:not(.offers--top)"));
+
+  // get offers' list:
+  let offers = await page.evaluate(() =>
+    Array.from(
+      document.querySelectorAll(
+        "table.offers:not(.offers--top) a.detailsLink:not(.thumb)"
+      )
+    ).map(offer => ({ title: offer.innerText, href: offer.href }))
   );
-  let price = await page.evaluate(() =>
-    Array.from(document.querySelectorAll(".price-label strong")).map(
-      el => el.innerText
-    )
-  );
-  console.log(title, price);
+  console.log(offers);
 
   await browser.close();
 })();
