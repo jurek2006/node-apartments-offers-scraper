@@ -54,78 +54,115 @@ const goToListPageAndScrapRecursively = async (url, page) => {
   }
 };
 
+const scrapOffer = async ({ url, title }, retriesLeft) => {
+  // for (let i = 0; i < 3; i++) {
+  //   console.log(`Attempt nr ${i}`);
+  //   goToOfferPageAndScrap({ url, title }).then().catch(err => {
+  //     console.log("error in test", err.message);
+  //   });
+  // }
+
+  // await goToOfferPageAndScrap({ url, title }).catch(err => {
+  //   console.log("error in test", err.message);
+  // });
+  console.log(`scrap Offer - url: ${url} leftAttempts: ${retriesLeft}`);
+  try {
+    return await goToOfferPageAndScrap({ url, title });
+  } catch (error) {
+    console.log("retry after error");
+    if (retriesLeft > 0) {
+      return scrapOffer({ url, title }, retriesLeft - 1);
+    } else {
+      return Promise.reject();
+    }
+  }
+};
+
 const goToOfferPageAndScrap = async ({ url, title }) => {
+  // return Promise.reject(new Error("error tttt"));
+
   browser = await puppeteer.launch({ headless: true });
 
-  let page = await browser.newPage().catch(err => {
-    console.error("error in creating new page");
-  });
+  let page = await browser.newPage();
+
   const userAgent = returnRandomUserAgent();
   page.setUserAgent(userAgent);
 
   console.log("opening url:", url);
-  await page.goto(url).catch(err => {
-    console.error("error in going to url screenshot", url);
-  });
+  await page.goto(url);
 
-  const titleN = await page
-    .evaluate(() => document.querySelector(".offer-titlebox h1").innerText)
-    .catch(err => {
-      console.error("error in getting innerText");
-    });
+  const titleN = await page.evaluate(
+    () => document.querySelector(".offer-titlebox h1").innerText
+  );
 
-  const offerID = await page
-    .evaluate(() =>
-      document
-        .querySelector(".offer-titlebox__details em small")
-        .innerText.replace("ID ogłoszenia: ", "")
-    )
-    .catch(err => {
-      console.error("error in getting id");
-    });
+  const offerID = await page.evaluate(() =>
+    document
+      .querySelector(".offer-titlebox__details em small")
+      .innerText.replace("ID ogłoszenia: ", "")
+  );
 
-  await page.screenshot({ path: `e-${title}-${offerID}.png` }).catch(err => {
-    console.error("error in creating screenshot", url);
-  });
+  // await page.screenshot({ path: `e-${title}-${offerID}.png` }).catch(err => {
+  //   console.error("error in creating screenshot", url);
+  // });
 
   console.log(titleN, offerID);
 
   const waitingTime = 500 + Math.floor(Math.random() * 1000);
-  await page.waitFor(waitingTime);
+  await page.waitFor(0);
   await browser.close();
 };
 
 (async () => {
-  let browser = await puppeteer.launch({ headless: true });
-  const page = await browser.newPage();
-  page.setUserAgent(
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0"
-  );
+  // let browser = await puppeteer.launch({ headless: true });
+  // const page = await browser.newPage();
+  // page.setUserAgent(
+  //   "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0"
+  // );
 
-  const allOffersList = await goToListPageAndScrapRecursively(
-    "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/olawa/",
-    page
-  );
+  // const allOffersList = await goToListPageAndScrapRecursively(
+  //   "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/olawa/",
+  //   page
+  // );
 
-  console.log(`all found offers (${allOffersList.length})`, allOffersList);
-  const filteredOnlyOlx = allOffersList.filter(el =>
-    el.url.includes("www.olx.pl")
-  );
+  // console.log(`all found offers (${allOffersList.length})`, allOffersList);
+  // const filteredOnlyOlx = allOffersList
+  //   .filter(el => el.url.includes("www.olx.pl"))
+  //   .slice(0, 3);
 
-  console.log("filtered:", filteredOnlyOlx);
+  // console.log("filtered:", filteredOnlyOlx);
 
-  console.log("wait");
-  await page.waitFor(1000);
-  console.log("wait end");
-  await browser.close();
+  // console.log("wait");
+  // await page.waitFor(1000);
+  // console.log("wait end");
+  // await browser.close();
 
-  // await goToOfferPageAndScrap(filteredOnlyOlx[0]);
-  // await goToOfferPageAndScrap(filteredOnlyOlx[1]);
-  // await goToOfferPageAndScrap(filteredOnlyOlx[2]);
-  // await goToOfferPageAndScrap(filteredOnlyOlx[3]);
+  const filteredOnlyOlx = [
+    {
+      title: "4 pokoje Oława Chopina",
+      url:
+        "https://www.olx.pl/oferta/4-pokoje-olawa-chopina-CID3-IDC1D2R.html#7ad347de0f"
+    },
+    {
+      title: "Mieszkanie do wynajęcia od zaraz. квартира негайно",
+      url:
+        "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-IDBfnfd.html#7ad347de0f"
+    },
+    {
+      title: "XXX",
+      url:
+        "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-XXXXX.html#7ad347de0f"
+    },
+    {
+      title: "Mieszkanie do wynajęcia",
+      url:
+        "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-CID3-IDCswau.html#7ad347de0f"
+    }
+  ];
 
   for (const x of filteredOnlyOlx) {
-    await goToOfferPageAndScrap(x);
+    await scrapOffer(x, 1).catch(() => {
+      console.log("nie da się pobrać");
+    });
   }
 
   // filteredOnlyOlx.forEach(async el => await goToOfferPageAndScrap(el)); - NOT WORKING
