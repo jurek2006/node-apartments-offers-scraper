@@ -71,18 +71,22 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
   const titleN = await page
     .evaluate(() => document.querySelector(".offer-titlebox h1").innerText)
     .catch(err => {
-      console.error("error in evaluate");
+      console.error("error in getting innerText");
     });
 
-  const offerID = await page.evaluate(() =>
-    document
-      .querySelector(".offer-titlebox__details em small")
-      .innerText.replace("ID ogłoszenia: ", "")
-  );
+  const offerID = await page
+    .evaluate(() =>
+      document
+        .querySelector(".offer-titlebox__details em small")
+        .innerText.replace("ID ogłoszenia: ", "")
+    )
+    .catch(err => {
+      console.error("error in getting id");
+    });
 
-  // await page.screenshot({ path: `e-${title}-${offerID}.png` }).catch(err => {
-  //   console.error("error in creating screenshot", url);
-  // });
+  await page.screenshot({ path: `e-${title}-${offerID}.png` }).catch(err => {
+    console.error("error in creating screenshot", url);
+  });
 
   console.log(titleN, offerID);
 
@@ -115,10 +119,14 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
   console.log("wait end");
   await browser.close();
 
-  await goToOfferPageAndScrap(filteredOnlyOlx[0]);
-  await goToOfferPageAndScrap(filteredOnlyOlx[1]);
-  await goToOfferPageAndScrap(filteredOnlyOlx[2]);
-  await goToOfferPageAndScrap(filteredOnlyOlx[3]);
+  // await goToOfferPageAndScrap(filteredOnlyOlx[0]);
+  // await goToOfferPageAndScrap(filteredOnlyOlx[1]);
+  // await goToOfferPageAndScrap(filteredOnlyOlx[2]);
+  // await goToOfferPageAndScrap(filteredOnlyOlx[3]);
+
+  for (const x of filteredOnlyOlx) {
+    await goToOfferPageAndScrap(x);
+  }
 
   // filteredOnlyOlx.forEach(async el => await goToOfferPageAndScrap(el)); - NOT WORKING
 
