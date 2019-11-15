@@ -55,20 +55,36 @@ const goToListPageAndScrapRecursively = async (url, page) => {
 };
 
 const goToOfferPageAndScrap = async ({ url, title }) => {
-  browser = await puppeteer.launch({ headless: false });
+  browser = await puppeteer.launch({ headless: true });
 
-  let page = await browser.newPage();
+  let page = await browser.newPage().catch(err => {
+    console.error("error in creating new page");
+  });
   const userAgent = returnRandomUserAgent();
   page.setUserAgent(userAgent);
 
   console.log("opening url:", url);
-  console.log("userAgent:", userAgent);
-  await page.goto(url);
-  await page.screenshot({ path: `e-${title}${url}.png` });
-  const titleN = await page.evaluate(() => {
-    // document.querySelector(".offer-titlebox h1").innerText;
+  await page.goto(url).catch(err => {
+    console.error("error in going to url screenshot", url);
   });
-  // console.log(title, titleN);
+
+  const titleN = await page
+    .evaluate(() => document.querySelector(".offer-titlebox h1").innerText)
+    .catch(err => {
+      console.error("error in evaluate");
+    });
+
+  const offerID = await page.evaluate(() =>
+    document
+      .querySelector(".offer-titlebox__details em small")
+      .innerText.replace("ID ogłoszenia: ", "")
+  );
+
+  // await page.screenshot({ path: `e-${title}-${offerID}.png` }).catch(err => {
+  //   console.error("error in creating screenshot", url);
+  // });
+
+  console.log(titleN, offerID);
 
   const waitingTime = 500 + Math.floor(Math.random() * 1000);
   await page.waitFor(waitingTime);
@@ -76,7 +92,7 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
 };
 
 (async () => {
-  let browser = await puppeteer.launch({ headless: false });
+  let browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
   page.setUserAgent(
     "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0"
@@ -99,10 +115,10 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
   console.log("wait end");
   await browser.close();
 
-  // await goToOfferPageAndScrap(filteredOnlyOlx[0]);
-  // await goToOfferPageAndScrap(filteredOnlyOlx[1]);
-  // await goToOfferPageAndScrap(filteredOnlyOlx[2]);
-  // await goToOfferPageAndScrap(filteredOnlyOlx[3]);
+  await goToOfferPageAndScrap(filteredOnlyOlx[0]);
+  await goToOfferPageAndScrap(filteredOnlyOlx[1]);
+  await goToOfferPageAndScrap(filteredOnlyOlx[2]);
+  await goToOfferPageAndScrap(filteredOnlyOlx[3]);
 
   // filteredOnlyOlx.forEach(async el => await goToOfferPageAndScrap(el)); - NOT WORKING
 
