@@ -1,4 +1,5 @@
 const puppeteer = require("puppeteer");
+const utils = require("./utils");
 
 const userAgents = [
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36",
@@ -58,9 +59,7 @@ const scrapOffer = async ({ url, title }, retriesLeft) => {
   console.log(`scrap Offer - url: ${url} leftAttempts: ${retriesLeft}`);
 
   try {
-    const redData = await goToOfferPageAndScrap({ url, title });
-    console.log("redData", redData);
-    return redData;
+    return await goToOfferPageAndScrap({ url, title });
   } catch (error) {
     if (retriesLeft > 0) {
       return scrapOffer({ url, title }, retriesLeft - 1);
@@ -164,14 +163,19 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
     }
   ];
 
+  const allResults = [];
   for (const offerDetailsLink of filteredOnlyOlx) {
-    await scrapOffer(offerDetailsLink, 2).catch(() => {
-      console.log("nie da się pobrać");
+    const redOfferData = await scrapOffer(offerDetailsLink, 2).catch(() => {
+      console.log("Can't scrap offer's details");
     });
+    console.log("red offer data", redOfferData);
+    allResults.push(redOfferData);
     // await goToOfferPageAndScrap(offerDetailsLink).catch(error => {
     //   console.log("nie da się pobrać", error.message);
     // });
     console.log("----------------------------------------------------");
   }
-  c;
+
+  await utils.saveJsonFile("result.json", allResults);
+  console.log("All results:", allResults);
 })();
