@@ -55,21 +55,13 @@ const goToListPageAndScrapRecursively = async (url, page) => {
 };
 
 const scrapOffer = async ({ url, title }, retriesLeft) => {
-  // for (let i = 0; i < 3; i++) {
-  //   console.log(`Attempt nr ${i}`);
-  //   goToOfferPageAndScrap({ url, title }).then().catch(err => {
-  //     console.log("error in test", err.message);
-  //   });
-  // }
-
-  // await goToOfferPageAndScrap({ url, title }).catch(err => {
-  //   console.log("error in test", err.message);
-  // });
   console.log(`scrap Offer - url: ${url} leftAttempts: ${retriesLeft}`);
+
   try {
-    return await goToOfferPageAndScrap({ url, title });
+    const redData = await goToOfferPageAndScrap({ url, title });
+    console.log("redData", redData);
+    return redData;
   } catch (error) {
-    console.log("retry after error");
     if (retriesLeft > 0) {
       return scrapOffer({ url, title }, retriesLeft - 1);
     } else {
@@ -79,37 +71,50 @@ const scrapOffer = async ({ url, title }, retriesLeft) => {
 };
 
 const goToOfferPageAndScrap = async ({ url, title }) => {
-  // return Promise.reject(new Error("error tttt"));
+  let browser;
+  try {
+    browser = await puppeteer.launch({ headless: false });
 
-  browser = await puppeteer.launch({ headless: true });
+    let page = await browser.newPage();
 
-  let page = await browser.newPage();
+    const userAgent = returnRandomUserAgent();
+    page.setUserAgent(userAgent);
 
-  const userAgent = returnRandomUserAgent();
-  page.setUserAgent(userAgent);
+    console.log("opening url:", url);
+    await page.goto(url);
 
-  console.log("opening url:", url);
-  await page.goto(url);
+    const titleN = await page.evaluate(
+      () => document.querySelector(".offer-titlebox h1").innerText
+    );
 
-  const titleN = await page.evaluate(
-    () => document.querySelector(".offer-titlebox h1").innerText
-  );
+    const offerID = await page.evaluate(() =>
+      document
+        .querySelector(".offer-titlebox__details em small")
+        .innerText.replace("ID ogłoszenia: ", "")
+    );
 
-  const offerID = await page.evaluate(() =>
-    document
-      .querySelector(".offer-titlebox__details em small")
-      .innerText.replace("ID ogłoszenia: ", "")
-  );
+    // await page.screenshot({ path: `e-${title}-${offerID}.png` }).catch(err => {
+    //   console.error("error in creating screenshot", url);
+    // });
 
-  // await page.screenshot({ path: `e-${title}-${offerID}.png` }).catch(err => {
-  //   console.error("error in creating screenshot", url);
-  // });
+    console.log(titleN, offerID);
 
-  console.log(titleN, offerID);
+    // const waitingTime = 500 + Math.floor(Math.random() * 1000);
+    // await page.waitFor(0);
+    await browser.close();
 
-  const waitingTime = 500 + Math.floor(Math.random() * 1000);
-  await page.waitFor(0);
-  await browser.close();
+    // REFACTOR THIS
+    if (offerID) {
+      return Promise.resolve(offerID);
+    } else {
+      return Promise.resolve(new Error("Can not scrap offer data"));
+    }
+  } catch (error) {
+    if (browser) {
+      await browser.close();
+    }
+    return Promise.reject(error);
+  }
 };
 
 (async () => {
@@ -150,7 +155,7 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
     {
       title: "XXX",
       url:
-        "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-XXXXX.html#7ad347de0f"
+        "https://www.kultura.olawa.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-XXXXX.html#7ad347de0f"
     },
     {
       title: "Mieszkanie do wynajęcia",
@@ -160,25 +165,12 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
   ];
 
   for (const x of filteredOnlyOlx) {
-    await scrapOffer(x, 1).catch(() => {
+    await scrapOffer(x, 2).catch(() => {
       console.log("nie da się pobrać");
     });
+    // await goToOfferPageAndScrap(x).catch(error => {
+    //   console.log("nie da się pobrać", error.message);
+    // });
+    console.log("----------------------------------------------------");
   }
-
-  // filteredOnlyOlx.forEach(async el => await goToOfferPageAndScrap(el)); - NOT WORKING
-
-  // await goToOfferPageAndScrap({
-  //   title: "Wynajmę mieszkanie dla firmy lub osób prywatnych",
-  //   url:
-  //     "https://www.olx.pl/oferta/wynajme-mieszkanie-dla-firmy-lub-osob-prywatnych-CID3-IDBtQ3N.html#0c1750f118"
-  // });
-  // await goToOfferPageAndScrap({
-  //   title: "Mieszkanie",
-  //   url: "https://www.olx.pl/oferta/mieszkanie-CID3-IDCa3L7.html#0c1750f118"
-  // });
-  // await goToOfferPageAndScrap({
-  //   title: "Wynajmę duże mieszkanie (3 pokoje) ok 70m2 PARTER",
-  //   url:
-  //     "https://www.olx.pl/oferta/wynajme-duze-mieszkanie-3-pokoje-ok-70m2-parter-CID3-IDCgLA4.html#7ad347de0f"
-  // });
 })();
