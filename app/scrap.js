@@ -92,6 +92,50 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
         .innerText.replace("ID ogłoszenia: ", "")
     );
 
+    const details = await page.evaluate(() => {
+      const details = {};
+      Array.from(document.querySelectorAll(".details tr tr")).forEach(el => {
+        details[el.querySelector("th").innerText] = el.querySelector(
+          "td"
+        ).innerText;
+      });
+      return details;
+    });
+    if (details) {
+      console.log("details", details);
+    }
+
+    details.offerID = offerID;
+
+    // price
+    details.price = await page
+      .evaluate(() => document.querySelector(".price-label strong").innerText)
+      .catch(err => {
+        console.log("price problem", err);
+      });
+
+    // user
+    details.userName = await page
+      .evaluate(
+        () => document.querySelector(".offer-user__details h4").innerText
+      )
+      .catch(err => {
+        console.log("user problem", err);
+      });
+
+    // added date & time
+
+    details.added = await page
+      .evaluate(
+        () => document.querySelector(".offer-titlebox__details em").innerText
+      )
+      .catch(err => {
+        console.log("added problem", err);
+      });
+
+    details.url = url;
+    details.title = title;
+
     // await page.screenshot({ path: `e-${title}-${offerID}.png` }).catch(err => {
     //   console.error("error in creating screenshot", url);
     // });
@@ -104,7 +148,7 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
 
     // REFACTOR THIS
     if (offerID) {
-      return Promise.resolve(offerID);
+      return Promise.resolve(details);
     } else {
       return Promise.resolve(new Error("Can not scrap offer data"));
     }
@@ -117,51 +161,51 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
 };
 
 (async () => {
-  // let browser = await puppeteer.launch({ headless: true });
-  // const page = await browser.newPage();
-  // page.setUserAgent(
-  //   "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0"
-  // );
+  let browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
+  page.setUserAgent(
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0"
+  );
 
-  // const allOffersList = await goToListPageAndScrapRecursively(
-  //   "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/olawa/",
-  //   page
-  // );
+  const allOffersList = await goToListPageAndScrapRecursively(
+    "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/olawa/",
+    page
+  );
 
-  // console.log(`all found offers (${allOffersList.length})`, allOffersList);
-  // const filteredOnlyOlx = allOffersList.filter(el =>
-  //   el.url.includes("www.olx.pl")
-  // );
+  console.log(`all found offers (${allOffersList.length})`, allOffersList);
+  const filteredOnlyOlx = allOffersList.filter(el =>
+    el.url.includes("www.olx.pl")
+  );
 
-  // console.log("filtered:", filteredOnlyOlx);
+  console.log("filtered:", filteredOnlyOlx);
 
-  // console.log("wait");
-  // await page.waitFor(1000);
-  // console.log("wait end");
-  // await browser.close();
+  console.log("wait");
+  await page.waitFor(1000);
+  console.log("wait end");
+  await browser.close();
 
-  const filteredOnlyOlx = [
-    {
-      title: "4 pokoje Oława Chopina",
-      url:
-        "https://www.olx.pl/oferta/4-pokoje-olawa-chopina-CID3-IDC1D2R.html#7ad347de0f"
-    },
-    {
-      title: "Mieszkanie do wynajęcia od zaraz. квартира негайно",
-      url:
-        "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-IDBfnfd.html#7ad347de0f"
-    },
-    {
-      title: "XXX",
-      url:
-        "https://www.kultura.olawa.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-XXXXX.html#7ad347de0f"
-    },
-    {
-      title: "Mieszkanie do wynajęcia",
-      url:
-        "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-CID3-IDCswau.html#7ad347de0f"
-    }
-  ];
+  // const filteredOnlyOlx = [
+  //   // {
+  //   //   title: "4 pokoje Oława Chopina",
+  //   //   url:
+  //   //     "https://www.olx.pl/oferta/4-pokoje-olawa-chopina-CID3-IDC1D2R.html#7ad347de0f"
+  //   // },
+  //   // {
+  //   //   title: "Mieszkanie do wynajęcia od zaraz. квартира негайно",
+  //   //   url:
+  //   //     "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-IDBfnfd.html#7ad347de0f"
+  //   // },
+  //   // {
+  //   //   title: "XXX",
+  //   //   url:
+  //   //     "https://www.kultura.olawa.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-XXXXX.html#7ad347de0f"
+  //   // },
+  //   // {
+  //   //   title: "Mieszkanie do wynajęcia",
+  //   //   url:
+  //   //     "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-CID3-IDCswau.html#7ad347de0f"
+  //   // }
+  // ];
 
   const allResults = [];
   for (const offerDetailsLink of filteredOnlyOlx) {
@@ -176,6 +220,6 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
     console.log("----------------------------------------------------");
   }
 
-  await utils.saveJsonFile("result.json", allResults);
+  await utils.saveJsonFile("./output/result.json", allResults);
   console.log("All results:", allResults);
 })();
