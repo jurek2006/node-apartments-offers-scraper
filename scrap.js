@@ -73,7 +73,7 @@ const scrapOffer = async ({ url, title }, retriesLeft) => {
 const goToOfferPageAndScrap = async ({ url, title }) => {
   let browser;
   try {
-    browser = await puppeteer.launch({ headless: false });
+    browser = await puppeteer.launch({ headless: true });
 
     let page = await browser.newPage();
 
@@ -118,51 +118,51 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
 };
 
 (async () => {
-  // let browser = await puppeteer.launch({ headless: true });
-  // const page = await browser.newPage();
-  // page.setUserAgent(
-  //   "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0"
-  // );
+  let browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
+  page.setUserAgent(
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0"
+  );
 
-  // const allOffersList = await goToListPageAndScrapRecursively(
-  //   "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/olawa/",
-  //   page
-  // );
+  const allOffersList = await goToListPageAndScrapRecursively(
+    "https://www.olx.pl/nieruchomosci/mieszkania/wynajem/olawa/",
+    page
+  );
 
-  // console.log(`all found offers (${allOffersList.length})`, allOffersList);
-  // const filteredOnlyOlx = allOffersList
-  //   .filter(el => el.url.includes("www.olx.pl"))
-  //   .slice(0, 3);
+  console.log(`all found offers (${allOffersList.length})`, allOffersList);
+  const filteredOnlyOlx = allOffersList.filter(el =>
+    el.url.includes("www.olx.pl")
+  );
 
-  // console.log("filtered:", filteredOnlyOlx);
+  console.log("filtered:", filteredOnlyOlx);
 
-  // console.log("wait");
-  // await page.waitFor(1000);
-  // console.log("wait end");
-  // await browser.close();
+  console.log("wait");
+  await page.waitFor(1000);
+  console.log("wait end");
+  await browser.close();
 
-  const filteredOnlyOlx = [
-    {
-      title: "4 pokoje Oława Chopina",
-      url:
-        "https://www.olx.pl/oferta/4-pokoje-olawa-chopina-CID3-IDC1D2R.html#7ad347de0f"
-    },
-    {
-      title: "Mieszkanie do wynajęcia od zaraz. квартира негайно",
-      url:
-        "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-IDBfnfd.html#7ad347de0f"
-    },
-    {
-      title: "XXX",
-      url:
-        "https://www.kultura.olawa.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-XXXXX.html#7ad347de0f"
-    },
-    {
-      title: "Mieszkanie do wynajęcia",
-      url:
-        "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-CID3-IDCswau.html#7ad347de0f"
-    }
-  ];
+  // const filteredOnlyOlx = [
+  //   {
+  //     title: "4 pokoje Oława Chopina",
+  //     url:
+  //       "https://www.olx.pl/oferta/4-pokoje-olawa-chopina-CID3-IDC1D2R.html#7ad347de0f"
+  //   },
+  //   {
+  //     title: "Mieszkanie do wynajęcia od zaraz. квартира негайно",
+  //     url:
+  //       "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-IDBfnfd.html#7ad347de0f"
+  //   },
+  //   {
+  //     title: "XXX",
+  //     url:
+  //       "https://www.kultura.olawa.pl/oferta/mieszkanie-do-wynajecia-od-zaraz-CID3-XXXXX.html#7ad347de0f"
+  //   },
+  //   {
+  //     title: "Mieszkanie do wynajęcia",
+  //     url:
+  //       "https://www.olx.pl/oferta/mieszkanie-do-wynajecia-CID3-IDCswau.html#7ad347de0f"
+  //   }
+  // ];
 
   for (const x of filteredOnlyOlx) {
     await scrapOffer(x, 2).catch(() => {
