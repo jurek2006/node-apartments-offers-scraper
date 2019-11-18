@@ -95,9 +95,9 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
     const details = await page.evaluate(() => {
       const details = {};
       Array.from(document.querySelectorAll(".details tr tr")).forEach(el => {
-        details[el.querySelector("th").innerText] = el.querySelector(
-          "td"
-        ).innerText;
+        details[el.querySelector("th").innerText] = el
+          .querySelector("td")
+          .innerText.replace(/,/g, "."); //replace , with .
       });
       return details;
     });
@@ -220,6 +220,13 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
     console.log("----------------------------------------------------");
   }
 
-  await utils.saveJsonFile("./output/result.json", allResults);
+  await utils.saveJsonFile(
+    `./output/result-${utils.getTimeStamp()}.json`,
+    allResults
+  );
+  await utils.saveCsvFile(
+    `./output/result-${utils.getTimeStamp()}.csv`,
+    allResults
+  );
   console.log("All results:", allResults);
 })();
