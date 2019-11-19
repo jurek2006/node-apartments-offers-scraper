@@ -1,2 +1,5 @@
 node_modules/
 output/*.*
+# ignore all content from privateConfig except md files
+app/privateConfig/*
+!app/privateConfig/*.md
