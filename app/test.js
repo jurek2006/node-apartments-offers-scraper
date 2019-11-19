@@ -16,6 +16,13 @@ const gSheets = require("./gsheets");
 // );
 
 // googleSheets
-gSheets.readFromGoogleSheets().then(res => {
-  console.log("res", res);
-});
+// gSheets.readFromGoogleSheets().then(res => {
+//   console.log("res", res);
+// });
+
+gSheets
+  .saveToGoogleSheets([
+    ["Jurek", "Skowron"],
+    ["Antek", "Bez"]
+  ])
+  .catch(err => console.log(err.message, err));

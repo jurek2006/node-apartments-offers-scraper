@@ -1,18 +1,6 @@
 const { google } = require("googleapis");
 const privateGoogleAuthKey = require("./privateConfig/privateGoogleAuthKey.json");
 
-const getFromGoogle = async client => {
-  const googleSheetsApi = google.sheets({ version: "v4", auth: client });
-
-  const opt = {
-    spreadsheetId: "1NabcyX9jnAGQCZjnylhKSc8T30SeoeDS5CUudQoqZvI",
-    range: "Arkusz1!A2:B5"
-  };
-
-  const data = await googleSheetsApi.spreadsheets.values.get(opt);
-  return data.data.values;
-};
-
 const authorizeAndReturnClient = async () => {
   const client = await new google.auth.JWT(
     privateGoogleAuthKey.client_email,
@@ -32,7 +20,37 @@ const authorizeAndReturnClient = async () => {
 
 const readFromGoogleSheets = async () => {
   const authorizedClient = await authorizeAndReturnClient();
-  return await getFromGoogle(authorizedClient);
+  const googleSheetsApi = google.sheets({
+    version: "v4",
+    auth: authorizedClient
+  });
+
+  const opt = {
+    spreadsheetId: "1NabcyX9jnAGQCZjnylhKSc8T30SeoeDS5CUudQoqZvI",
+    range: "Arkusz1!A2:B5"
+  };
+
+  const data = await googleSheetsApi.spreadsheets.values.get(opt);
+  return data.data.values;
 };
 
-module.exports = { readFromGoogleSheets };
+const saveToGoogleSheets = async dataToSave => {
+  const authorizedClient = await authorizeAndReturnClient();
+  const googleSheetsApi = google.sheets({
+    version: "v4",
+    auth: authorizedClient
+  });
+
+  const savingOptions = {
+    spreadsheetId: "1NabcyX9jnAGQCZjnylhKSc8T30SeoeDS5CUudQoqZvIq",
+    range: "Arkusz1!G1",
+    valueInputOption: "USER_ENTERED",
+    resource: {
+      values: dataToSave
+    }
+  };
+
+  return await googleSheetsApi.spreadsheets.values.update(savingOptions);
+};
+
+module.exports = { readFromGoogleSheets, saveToGoogleSheets };
