@@ -42,8 +42,8 @@ const saveToGoogleSheets = async dataToSave => {
   });
 
   const savingOptions = {
-    spreadsheetId: "1NabcyX9jnAGQCZjnylhKSc8T30SeoeDS5CUudQoqZvIq",
-    range: "Arkusz1!G1",
+    spreadsheetId: "1NabcyX9jnAGQCZjnylhKSc8T30SeoeDS5CUudQoqZvI",
+    range: "Arkusz1!A1",
     valueInputOption: "USER_ENTERED",
     resource: {
       values: dataToSave

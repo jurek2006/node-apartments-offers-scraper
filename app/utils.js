@@ -16,6 +16,16 @@ const saveCsvFile = async (filePath, dataToSave) => {
   await writeFile(filePath, csvData);
 };
 
+const convertDataToCsv = dataToSave => {
+  return csvjson.toCSV(dataToSave, {
+    headers: "key"
+  });
+};
+
+const convertCsvToArray = dataCsv => {
+  return csvjson.toArray(dataCsv);
+};
+
 const writeFile = async (filePath, data) => {
   fs.writeFile(filePath, data, err => {
     if (err) throw err;
@@ -32,7 +42,7 @@ const convertDataToNumber = priceInZl =>
   +priceInZl
     .trim()
     .replace(" zł", "")
-    .replace(",", ".")
+    // .replace(",", ".")
     .replace(" ", "") //space got from olx price
     .replace(" ", "") //normal space
     .replace("m²", "");
@@ -53,5 +63,7 @@ module.exports = {
   saveCsvFile,
   getTimeStamp,
   convertDataToNumber,
-  getTimeAndDate
+  getTimeAndDate,
+  convertDataToCsv,
+  convertCsvToArray
 };

@@ -1,5 +1,6 @@
 const puppeteer = require("puppeteer");
 const utils = require("./utils");
+const gSheets = require("./gsheets");
 
 const userAgents = [
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36",
@@ -95,9 +96,8 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
     const details = await page.evaluate(() => {
       const details = {};
       Array.from(document.querySelectorAll(".details tr tr")).forEach(el => {
-        details[el.querySelector("th").innerText] = el
-          .querySelector("td")
-          .innerText.replace(/,/g, "."); //replace , with .
+        details[el.querySelector("th").innerText] = el.querySelector("td");
+        // .innerText.replace(/,/g, "."); //replace , with .
       });
       return details;
     });
@@ -248,5 +248,12 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
     `./output/result-${utils.getTimeStamp()}.csv`,
     allResults
   );
+
+  await gSheets
+    .saveToGoogleSheets(
+      utils.convertCsvToArray(utils.convertDataToCsv(allResults))
+    )
+    .catch(err => console.log("błąd GS", err));
+
   console.log("All results:", allResults);
 })();
