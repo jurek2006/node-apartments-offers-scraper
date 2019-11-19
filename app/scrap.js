@@ -83,45 +83,24 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
     console.log("opening url:", url);
     await page.goto(url);
 
-    const titleN = await page.evaluate(
-      () => document.querySelector(".offer-titlebox h1").innerText
-    );
+    let details = {};
+
+    // add checking if titles match
+    // const titleN = await page.evaluate(
+    //   () => document.querySelector(".offer-titlebox h1").innerText
+    // );
+
+    details.title = title;
+    details.url = url;
 
     const offerID = await page.evaluate(() =>
       document
         .querySelector(".offer-titlebox__details em small")
         .innerText.replace("ID ogłoszenia: ", "")
     );
-
-    const details = await page.evaluate(() => {
-      const details = {};
-      Array.from(document.querySelectorAll(".details tr tr")).forEach(el => {
-        details[el.querySelector("th").innerText] = el.querySelector("td");
-        // .innerText.replace(/,/g, "."); //replace , with .
-      });
-      return details;
-    });
-
     details.offerID = offerID;
 
-    // convert rent
-    details["Czynsz (dodatkowo)"] = utils.convertDataToNumber(
-      details["Czynsz (dodatkowo)"]
-    );
-
-    // convert area
-    details.Powierzchnia = utils.convertDataToNumber(details.Powierzchnia);
-
-    // console.log(
-    //   "powierzchnia",
-    //   utils.convertDataToNumber(details.Powierzchnia)
-    // );
-    // console.log(
-    //   "czynsz",
-    //   utils.convertDataToNumber(details["Czynsz (dodatkowo)"])
-    // );
-
-    // price
+    // price;
     details.price = utils.convertDataToNumber(
       await page
         .evaluate(() => document.querySelector(".price-label strong").innerText)
@@ -130,40 +109,61 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
         })
     );
 
-    // user
-    details.userName = await page
-      .evaluate(
-        () => document.querySelector(".offer-user__details h4").innerText
-      )
-      .catch(err => {
-        console.log("user problem", err);
+    // get details from table
+    const detailsTable = await page.evaluate(() => {
+      const details = {};
+      Array.from(document.querySelectorAll(".details tr tr")).forEach(el => {
+        details[el.querySelector("th").innerText] = el.querySelector(
+          "td"
+        ).innerText;
+        // .replace(/,/g, "."); //replace , with .
       });
+      return details;
+    });
+
+    // convert rent
+    detailsTable["Czynsz (dodatkowo)"] = utils.convertDataToNumber(
+      detailsTable["Czynsz (dodatkowo)"]
+    );
+
+    // convert area
+    detailsTable.Powierzchnia = utils.convertDataToNumber(
+      detailsTable.Powierzchnia
+    );
+
+    // // add price with rent
+    details.priceWithRent = details.price + detailsTable["Czynsz (dodatkowo)"];
+
+    // add properties from detailsTable to details
+    // details = Object.assign(details, detailsTable);
+    details.rent = detailsTable["Czynsz (dodatkowo)"];
+    details.area = detailsTable.Powierzchnia;
+    details.rooms = detailsTable["Liczba pokoi"];
+    details.furniture = detailsTable.Umeblowane;
+    details.floor = detailsTable.Poziom;
+    details.building = detailsTable["Rodzaj zabudowy"];
+    details.offerType = detailsTable["Oferta od"];
+
+    // user
+    details.userName = await page.evaluate(
+      () => document.querySelector(".offer-user__details h4").innerText
+    );
+
+    details.userLink = await page.evaluate(
+      () => document.querySelector(".offer-user__details h4 a").href
+    );
 
     // added date & time
 
     const offerAdded = utils.getTimeAndDate(
-      await page
-        .evaluate(
-          () => document.querySelector(".offer-titlebox__details em").innerText
-        )
-        .catch(err => {
-          console.log("added problem", err);
-        })
+      await page.evaluate(
+        () => document.querySelector(".offer-titlebox__details em").innerText
+      )
     );
 
     details.addedDate = offerAdded.date;
     details.addedTime = offerAdded.time;
-    details.url = url;
-    details.title = title;
 
-    // await page.screenshot({ path: `e-${title}-${offerID}.png` }).catch(err => {
-    //   console.error("error in creating screenshot", url);
-    // });
-
-    console.log(titleN, offerID);
-
-    // const waitingTime = 500 + Math.floor(Math.random() * 1000);
-    // await page.waitFor(0);
     await browser.close();
 
     // REFACTOR THIS
