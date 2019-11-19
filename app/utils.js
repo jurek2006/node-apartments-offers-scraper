@@ -23,7 +23,35 @@ const writeFile = async (filePath, data) => {
   });
 };
 
+// should be named - generateTimeStamp
 const getTimeStamp = () => {
   return moment().format();
 };
-module.exports = { saveJsonFile, saveCsvFile, getTimeStamp };
+
+const convertDataToNumber = priceInZl =>
+  +priceInZl
+    .trim()
+    .replace(" zł", "")
+    .replace(",", ".")
+    .replace(" ", "") //space got from olx price
+    .replace(" ", "") //normal space
+    .replace("m²", "");
+
+const getTimeAndDate = string => {
+  const [time, date] = string
+    .trim()
+    .split(" o ")[1]
+    .split(", ");
+  return {
+    time,
+    date
+  };
+};
+
+module.exports = {
+  saveJsonFile,
+  saveCsvFile,
+  getTimeStamp,
+  convertDataToNumber,
+  getTimeAndDate
+};

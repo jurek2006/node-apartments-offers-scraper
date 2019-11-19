@@ -101,18 +101,34 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
       });
       return details;
     });
-    if (details) {
-      console.log("details", details);
-    }
 
     details.offerID = offerID;
 
+    // convert rent
+    details["Czynsz (dodatkowo)"] = utils.convertDataToNumber(
+      details["Czynsz (dodatkowo)"]
+    );
+
+    // convert area
+    details.Powierzchnia = utils.convertDataToNumber(details.Powierzchnia);
+
+    // console.log(
+    //   "powierzchnia",
+    //   utils.convertDataToNumber(details.Powierzchnia)
+    // );
+    // console.log(
+    //   "czynsz",
+    //   utils.convertDataToNumber(details["Czynsz (dodatkowo)"])
+    // );
+
     // price
-    details.price = await page
-      .evaluate(() => document.querySelector(".price-label strong").innerText)
-      .catch(err => {
-        console.log("price problem", err);
-      });
+    details.price = utils.convertDataToNumber(
+      await page
+        .evaluate(() => document.querySelector(".price-label strong").innerText)
+        .catch(err => {
+          console.log("price problem", err);
+        })
+    );
 
     // user
     details.userName = await page
@@ -125,14 +141,18 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
 
     // added date & time
 
-    details.added = await page
-      .evaluate(
-        () => document.querySelector(".offer-titlebox__details em").innerText
-      )
-      .catch(err => {
-        console.log("added problem", err);
-      });
+    const offerAdded = utils.getTimeAndDate(
+      await page
+        .evaluate(
+          () => document.querySelector(".offer-titlebox__details em").innerText
+        )
+        .catch(err => {
+          console.log("added problem", err);
+        })
+    );
 
+    details.addedDate = offerAdded.date;
+    details.addedTime = offerAdded.time;
     details.url = url;
     details.title = title;
 
@@ -150,7 +170,7 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
     if (offerID) {
       return Promise.resolve(details);
     } else {
-      return Promise.resolve(new Error("Can not scrap offer data"));
+      return Promise.reject(new Error("Can not scrap offer data"));
     }
   } catch (error) {
     if (browser) {
@@ -173,9 +193,9 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
   );
 
   console.log(`all found offers (${allOffersList.length})`, allOffersList);
-  const filteredOnlyOlx = allOffersList.filter(el =>
-    el.url.includes("www.olx.pl")
-  );
+  const filteredOnlyOlx = allOffersList
+    .filter(el => el.url.includes("www.olx.pl"))
+    .slice(0, 3);
 
   console.log("filtered:", filteredOnlyOlx);
 
