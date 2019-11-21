@@ -42,10 +42,15 @@ const convertDataToNumber = priceInZl =>
   +priceInZl
     .trim()
     .replace(" zł", "")
-    // .replace(",", ".")
-    .replace(" ", "") //space got from olx price
+    .replace(",", ".")
+    .replace(" ", "") //space got from olx price (different than normal)
     .replace(" ", "") //normal space
     .replace("m²", "");
+
+const convertNumberToStringWithDecimalSeparator = (number, separator = ".") =>
+  separator === "."
+    ? number.toString()
+    : number.toString().replace(".", separator);
 
 const getTimeAndDate = string => {
   const [time, date] = string
@@ -65,5 +70,6 @@ module.exports = {
   convertDataToNumber,
   getTimeAndDate,
   convertDataToCsv,
-  convertCsvToArray
+  convertCsvToArray,
+  convertNumberToStringWithDecimalSeparator
 };
