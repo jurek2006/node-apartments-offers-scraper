@@ -195,10 +195,9 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
   );
 
   console.log(`all found offers (${allOffersList.length})`, allOffersList);
-  const filteredOnlyOlx = allOffersList.filter(el =>
-    el.url.includes("www.olx.pl")
-  );
-  // .slice(0, 3);
+  const filteredOnlyOlx = allOffersList
+    .filter(el => el.url.includes("www.olx.pl"))
+    .slice(0, 3);
 
   console.log("filtered:", filteredOnlyOlx);
 
