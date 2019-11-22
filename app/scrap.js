@@ -23,7 +23,7 @@ const scrapOffersList = async page => {
   const offersList = await page.evaluate(() =>
     Array.from(
       document.querySelectorAll(
-        "table.offers:not(.offers--top) a.detailsLink:not(.thumb)"
+        "table.offers:not(.offers--top) a.detailsLink:not(.thumb), table.offers:not(.offers--top) a.detailsLinkPromoted:not(.thumb)"
       )
     ).map(offer => ({ title: offer.innerText, url: offer.href }))
   );
@@ -127,8 +127,10 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
     );
 
     // convert area
-    detailsTable.Powierzchnia = utils.convertDataToNumber(
-      detailsTable.Powierzchnia
+    // REFACTOR CONVERTING
+    detailsTable.Powierzchnia = utils.convertNumberToStringWithDecimalSeparator(
+      utils.convertDataToNumber(detailsTable.Powierzchnia),
+      ","
     );
 
     // // add price with rent
@@ -193,9 +195,10 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
   );
 
   console.log(`all found offers (${allOffersList.length})`, allOffersList);
-  const filteredOnlyOlx = allOffersList
-    .filter(el => el.url.includes("www.olx.pl"))
-    .slice(0, 3);
+  const filteredOnlyOlx = allOffersList.filter(el =>
+    el.url.includes("www.olx.pl")
+  );
+  // .slice(0, 3);
 
   console.log("filtered:", filteredOnlyOlx);
 

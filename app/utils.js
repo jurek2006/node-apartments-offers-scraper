@@ -8,9 +8,11 @@ const saveJsonFile = async (filePath, dataToSave) => {
   await writeFile(filePath, data);
 };
 
+// in csvjson delimiter has to be different than period to work properly with polish decimal number format
 const saveCsvFile = async (filePath, dataToSave) => {
   const csvData = csvjson.toCSV(dataToSave, {
-    headers: "key"
+    headers: "key",
+    delimiter: "\t"
   });
 
   await writeFile(filePath, csvData);
@@ -18,12 +20,15 @@ const saveCsvFile = async (filePath, dataToSave) => {
 
 const convertDataToCsv = dataToSave => {
   return csvjson.toCSV(dataToSave, {
-    headers: "key"
+    headers: "key",
+    delimiter: "\t"
   });
 };
 
 const convertCsvToArray = dataCsv => {
-  return csvjson.toArray(dataCsv);
+  return csvjson.toArray(dataCsv, {
+    delimiter: "\t"
+  });
 };
 
 const writeFile = async (filePath, data) => {
@@ -42,10 +47,15 @@ const convertDataToNumber = priceInZl =>
   +priceInZl
     .trim()
     .replace(" zł", "")
-    // .replace(",", ".")
-    .replace(" ", "") //space got from olx price
+    .replace(",", ".")
+    .replace(" ", "") //space got from olx price (different than normal)
     .replace(" ", "") //normal space
     .replace("m²", "");
+
+const convertNumberToStringWithDecimalSeparator = (number, separator = ".") =>
+  separator === "."
+    ? number.toString()
+    : number.toString().replace(".", separator);
 
 const getTimeAndDate = string => {
   const [time, date] = string
@@ -65,5 +75,6 @@ module.exports = {
   convertDataToNumber,
   getTimeAndDate,
   convertDataToCsv,
-  convertCsvToArray
+  convertCsvToArray,
+  convertNumberToStringWithDecimalSeparator
 };
