@@ -8,9 +8,11 @@ const saveJsonFile = async (filePath, dataToSave) => {
   await writeFile(filePath, data);
 };
 
+// in csvjson delimiter has to be different than period to work properly with polish decimal number format
 const saveCsvFile = async (filePath, dataToSave) => {
   const csvData = csvjson.toCSV(dataToSave, {
-    headers: "key"
+    headers: "key",
+    delimiter: "\t"
   });
 
   await writeFile(filePath, csvData);
@@ -18,12 +20,15 @@ const saveCsvFile = async (filePath, dataToSave) => {
 
 const convertDataToCsv = dataToSave => {
   return csvjson.toCSV(dataToSave, {
-    headers: "key"
+    headers: "key",
+    delimiter: "\t"
   });
 };
 
 const convertCsvToArray = dataCsv => {
-  return csvjson.toArray(dataCsv);
+  return csvjson.toArray(dataCsv, {
+    delimiter: "\t"
+  });
 };
 
 const writeFile = async (filePath, data) => {
