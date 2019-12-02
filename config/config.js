@@ -5,7 +5,7 @@ const OFFERS_FILE = {
   // defines json file where to store offers
 
   filename: "offers.json",
-  path: "../data"
+  path: "./data"
 };
 
 module.exports = { GOOGLE_SPREADSHEET_ID, OFFERS_FILE };
