@@ -4,8 +4,9 @@ const puppeteer = require('puppeteer');
 const utils = require('../app/utils');
 
 module.exports = class Offer {
-  constructor(url) {
+  constructor(url, details = {}) {
     this.url = url;
+    this.details = details;
   }
 
   returnRandomUserAgent() {
@@ -130,7 +131,8 @@ module.exports = class Offer {
 
       // REFACTOR THIS
       if (offerID) {
-        return Promise.resolve(details);
+        // return new Offer instance with details scraped from website
+        return Promise.resolve(new Offer(url, details));
       } else {
         return Promise.reject(new Error('Can not scrap offer data'));
       }
@@ -151,7 +153,7 @@ module.exports = class Offer {
       if (retriesLeft > 0) {
         return this.scrapAttemptWithRetry(retriesLeft - 1);
       } else {
-        return Promise.reject();
+        return Promise.reject(new Error(`Failed scraping url ${this.url}`));
       }
     }
   }
@@ -161,8 +163,15 @@ module.exports = class Offer {
 
     for (const offerUrl of urlsArray) {
       const offer = new Offer(offerUrl);
-      const scrapedOffer = await offer.scrapAttemptWithRetry(2);
-      console.log('scrapedOffer', scrapedOffer);
+      const scrapedOffer = await offer
+        .scrapAttemptWithRetry(2)
+        .catch(errorWhenScrapingOffer => {
+          console.log('error', errorWhenScrapingOffer);
+        });
+      if (scrapedOffer) {
+        // if offer scraped properly scrapedOffer contains property details with properties like rooms, ares etc.
+        console.log('scrapedOffer', scrapedOffer);
+      }
     }
   }
 };
