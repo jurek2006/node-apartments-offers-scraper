@@ -1,5 +1,5 @@
-// const { readJsonFile, saveJsonFile } = require('../utils/fileSystemUtils');
-// const { OFFERS_FILE } = require('../config/config');
+const { readJsonFile, saveJsonFile } = require('../utils/fileSystemUtils');
+const { OFFERS_FILE } = require('../config/config');
 const puppeteer = require('puppeteer');
 const utils = require('../app/utils');
 
@@ -7,6 +7,81 @@ module.exports = class Offer {
   constructor(url, details = {}) {
     this.url = url;
     this.details = details;
+  }
+
+  // method saving offer to json file
+  async save() {
+    const offerToSave = this;
+
+    // read all offers from file to array
+    const allRedOffers = await Offer.readAll();
+    if (!allRedOffers.ok) return allRedOffers;
+
+    // check if there's no offer with same url
+    const existingOffer = allRedOffers.data.find(
+      offer => offer.url === offerToSave.url
+    );
+    if (existingOffer) {
+      return {
+        ok: false,
+        error: `offer with url ${offerToSave.url} already saved`
+      };
+    }
+
+    // if there's no offer with same url add saving offer
+    const updatedAllOffers = [offerToSave, ...allRedOffers.data];
+
+    // save all offers to the file and return saved offer
+    const savingStatus = await Offer.saveAll(updatedAllOffers);
+
+    // if Offer.saveAll failed return {ok: false, error}
+    if (!savingStatus.ok) return savingStatus;
+
+    return { ok: true, data: offerToSave }; // if saving succeeded - return with data of saved offer
+  }
+
+  // reads all offers from json file
+  static async readAll() {
+    try {
+      const redData = await readJsonFile(
+        OFFERS_FILE.filename,
+        OFFERS_FILE.path
+      );
+      if (!redData.ok) return redData;
+
+      if (!Array.isArray(redData.data)) {
+        return {
+          ok: false,
+          error: new Error('redData.data is not an array')
+        };
+      }
+      return {
+        ok: true,
+        data: redData.data.map(
+          redDataitem => new Offer(redDataitem.url, redDataitem.details)
+        )
+      };
+    } catch (error) {
+      return { ok: false, error };
+    }
+  }
+
+  // saves array of Offer instances to json file
+  static async saveAll(offersArray) {
+    // saveJsonFile returns promise which resolves to {ok: true} when succeed and {ok: false, error} when failed
+    return await saveJsonFile(
+      offersArray,
+      OFFERS_FILE.filename,
+      OFFERS_FILE.path
+    );
+  }
+
+  // gets Offer with given url from json file
+  static async getByUrl(url) {
+    const allRedOffers = await Offer.readAll();
+    const foundOfferData = allRedOffers.find(offer => offer.url === url);
+    console.log('all offers in gBU', allRedOffers, foundOfferData);
+    return foundOfferData ? foundOfferData : null;
   }
 
   returnRandomUserAgent() {
@@ -158,20 +233,40 @@ module.exports = class Offer {
     }
   }
 
-  static async scrapAll(urlsArray) {
-    // method to scrap offers for each url in urlsArray
-
-    for (const offerUrl of urlsArray) {
-      const offer = new Offer(offerUrl);
-      const scrapedOffer = await offer
-        .scrapAttemptWithRetry(2)
-        .catch(errorWhenScrapingOffer => {
-          console.log('error', errorWhenScrapingOffer);
-        });
-      if (scrapedOffer) {
-        // if offer scraped properly scrapedOffer contains property details with properties like rooms, ares etc.
-        console.log('scrapedOffer', scrapedOffer);
+  async scrapIfNewOfferAndSave() {
+    const scrapedOffer = await this.scrapAttemptWithRetry(2).catch(
+      errorWhenScrapingOffer => {
+        console.log('error', errorWhenScrapingOffer);
       }
+    );
+    if (scrapedOffer) {
+      // if offer scraped properly scrapedOffer contains property details with properties like rooms, ares etc.
+      console.log('scrapedOffer', scrapedOffer);
+
+      const savingStatus = await scrapedOffer.save();
+      if (!savingStatus.ok) {
+        const error = `Saving offer failed for offer with url ${scrapedOffer.url} - ${savingStatus.error}`;
+        console.log(error);
+        return {
+          ok: false,
+          error
+        };
+      }
+
+      console.log(
+        `Saving offer succeed for offer with url ${scrapedOffer.url}`
+      );
+      return {
+        ok: true,
+        data: scrapedOffer
+      };
+    }
+  }
+
+  // method to scrap offers for each url in urlsArray
+  static async scrapAll(urlsArray) {
+    for (const offerUrl of urlsArray) {
+      await new Offer(offerUrl).scrapIfNewOfferAndSave();
     }
   }
 };
