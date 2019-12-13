@@ -211,33 +211,39 @@ module.exports = class Offer {
 
       await browser.close();
 
-      // REFACTOR THIS
       if (offerID) {
-        // return new Offer instance with details scraped from website
-        return Promise.resolve(new Offer(url, details));
+        // if scraped properly - there's the offerID
+        return { ok: true, data: new Offer(url, details) };
       } else {
-        return Promise.reject(new Error('Can not scrap offer data'));
+        return { ok: false, error: 'Can not scrap offer data' };
       }
     } catch (error) {
       if (browser) {
+        // if browser still opened - close it
         await browser.close();
       }
-      return Promise.reject(error);
+      return { ok: false, error };
     }
   }
 
   async scrapAttemptWithRetry(retriesLeft) {
+    console.log(
+      '------------------------------------------------------------------'
+    );
     console.log(`scrap Offer - url: ${this.url} leftAttempts: ${retriesLeft}`);
 
-    try {
-      return await this.scrapFromPage();
-    } catch (error) {
+    const scrapingResult = await this.scrapFromPage();
+    if (!scrapingResult.ok) {
       if (retriesLeft > 0) {
         return this.scrapAttemptWithRetry(retriesLeft - 1);
       } else {
-        return Promise.reject(new Error(`Failed scraping url ${this.url}`));
+        return {
+          ok: false,
+          error: `Failed scraping url ${this.url}`
+        };
       }
     }
+    return { ok: true, data: scrapingResult.data };
   }
 
   async scrapIfNewOfferAndSave() {
@@ -260,19 +266,26 @@ module.exports = class Offer {
       return { ok: true, data: undefined };
     }
 
-    const scrapedOffer = await offerToScrap
-      .scrapAttemptWithRetry(2)
-      .catch(errorWhenScrapingOffer => {
-        console.error('error', errorWhenScrapingOffer);
-      });
+    const scrapingOfferResult = await offerToScrap.scrapAttemptWithRetry(2);
+    if (!scrapingOfferResult.ok) {
+      const error = `Failed scraping url' ${scrapingOfferResult.error}`;
+      console.error(error);
+      return {
+        ok: false,
+        error
+      };
+    }
+
+    // if offer scraped properly scrapedOffer contains property details with properties like rooms, ares etc.
+    const scrapedOffer = scrapingOfferResult.data;
+
     if (scrapedOffer) {
-      // if offer scraped properly scrapedOffer contains property details with properties like rooms, ares etc.
       console.log('scrapedOffer', scrapedOffer);
 
       const savingStatus = await scrapedOffer.save();
       if (!savingStatus.ok) {
         const error = `Saving offer failed for offer with url ${scrapedOffer.url} - ${savingStatus.error}`;
-        console.log(error);
+        console.error(error);
         return {
           ok: false,
           error
