@@ -237,6 +237,7 @@ module.exports = class Offer {
     const scrapingResult = await this.scrapFromPage();
     if (!scrapingResult.ok) {
       if (retriesLeft > 0) {
+        userLog(`Scraping attempt failed. Retrying`);
         return this.scrapAttemptWithRetry(retriesLeft - 1);
       } else {
         return {
