@@ -3,7 +3,7 @@ const isShowingVerboseLogsOn = true;
 
 exports.verboseLog = message => {
   if (isShowingVerboseLogsOn) {
-    console.log(chalk.yellow(`VERBOSE: ${message}`));
+    console.log(chalk.gray(`VERBOSE: ${message}`));
   }
 };
 
