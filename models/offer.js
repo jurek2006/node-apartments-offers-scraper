@@ -1,4 +1,5 @@
 const { readJsonFile, saveJsonFile } = require('../utils/fileSystemUtils');
+const { verboseLog, userLog } = require('../utils/developerUtils');
 const { OFFERS_FILE } = require('../config/config');
 const puppeteer = require('puppeteer');
 const utils = require('../app/utils');
@@ -122,7 +123,6 @@ module.exports = class Offer {
       let page = await browser.newPage();
 
       const userAgent = this.returnRandomUserAgent();
-      console.log('userAgent', userAgent);
       page.setUserAgent(userAgent);
 
       console.log('opening url:', url);
@@ -227,10 +227,12 @@ module.exports = class Offer {
   }
 
   async scrapAttemptWithRetry(retriesLeft) {
-    console.log(
+    verboseLog(
       '------------------------------------------------------------------'
     );
-    console.log(`scrap Offer - url: ${this.url} leftAttempts: ${retriesLeft}`);
+    verboseLog(
+      `scrap Offer attempt - url: ${this.url} leftAttempts: ${retriesLeft}`
+    );
 
     const scrapingResult = await this.scrapFromPage();
     if (!scrapingResult.ok) {
@@ -248,19 +250,19 @@ module.exports = class Offer {
 
   async scrapIfNewOfferAndSave() {
     const offerToScrap = this;
+    userLog(`Started scraping offer ${offerToScrap.url}`);
 
     // checking if offer already scraped and omiting if so
     const checkIfAlreadyScraped = await Offer.getByUrl(offerToScrap.url);
     if (!checkIfAlreadyScraped.ok) {
-      console.error(
-        `Failed to check if offer with url ${offerToScrap.url} already scraped. Carry on scraping the offer`,
-        checkIfAlreadyScraped.error
+      userLog(
+        `Failed to check if offer with url ${offerToScrap.url} already scraped. Carry on scraping the offer. ${checkIfAlreadyScraped.error}`
       );
     }
 
     if (checkIfAlreadyScraped.data) {
       // found offer data in saved/already scraped offers
-      console.log(
+      userLog(
         `Offer with url ${offerToScrap.url} already scraped/saved. Offer omited.`
       );
       return { ok: true, data: undefined };
@@ -269,7 +271,7 @@ module.exports = class Offer {
     const scrapingOfferResult = await offerToScrap.scrapAttemptWithRetry(2);
     if (!scrapingOfferResult.ok) {
       const error = `Failed scraping url' ${scrapingOfferResult.error}`;
-      console.error(error);
+      userLog(error);
       return {
         ok: false,
         error
@@ -280,21 +282,19 @@ module.exports = class Offer {
     const scrapedOffer = scrapingOfferResult.data;
 
     if (scrapedOffer) {
-      console.log('scrapedOffer', scrapedOffer);
+      verboseLog('scrapedOffer', scrapedOffer);
 
       const savingStatus = await scrapedOffer.save();
       if (!savingStatus.ok) {
         const error = `Saving offer failed for offer with url ${scrapedOffer.url} - ${savingStatus.error}`;
-        console.error(error);
+        userLog(error);
         return {
           ok: false,
           error
         };
       }
 
-      console.log(
-        `Saving offer succeed for offer with url ${scrapedOffer.url}`
-      );
+      userLog(`Saving offer succeed for offer with url ${scrapedOffer.url}`);
       return {
         ok: true,
         data: scrapedOffer
