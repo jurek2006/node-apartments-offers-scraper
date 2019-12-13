@@ -114,32 +114,56 @@ module.exports = class Offer {
     // resolves to succes or rejects if scraping failed
 
     const { url } = this;
-    console.log('scrap method', this, url);
 
     let browser;
+    let page;
+
     try {
+      // try to open url in puppeteer
       browser = await puppeteer.launch({ headless: true });
 
-      let page = await browser.newPage();
+      page = await browser.newPage();
 
       const userAgent = this.returnRandomUserAgent();
       page.setUserAgent(userAgent);
 
-      console.log('opening url:', url);
       await page.goto(url);
+    } catch (error) {
+      // if failed to go to url in puppeteer
 
-      let details = {};
+      if (browser) {
+        // if browser still opened - close it
+        await browser.close();
+      }
+      verboseLog(`Failed to open url ${error}`);
+      return { ok: false, error };
+    }
 
-      // details.title = title;
-      details.url = url;
+    let details = {};
+    details.url = url;
 
+    // try to scrap offerID -
+    // on OLX if you can't scrape offerID something went wrong and scrapping offer should quit
+
+    try {
       const offerID = await page.evaluate(() =>
         document
           .querySelector('.offer-titlebox__details em small')
           .innerText.replace('ID ogłoszenia: ', '')
       );
-      details.offerID = offerID;
 
+      details.offerID = offerID;
+    } catch (error) {
+      const niceError = `Url opened successfully but failed to find offerID. Scraping offer aborted. Error: ${error}`;
+      verboseLog(niceError);
+      if (browser) {
+        // if browser still opened - close it
+        await browser.close();
+      }
+      return { ok: false, error: niceError };
+    }
+
+    try {
       // price;
       details.price = utils.convertDataToNumber(
         await page
@@ -210,20 +234,17 @@ module.exports = class Offer {
       details.addedTime = offerAdded.time;
 
       await browser.close();
-
-      if (offerID) {
-        // if scraped properly - there's the offerID
-        return { ok: true, data: new Offer(url, details) };
-      } else {
-        return { ok: false, error: 'Can not scrap offer data' };
-      }
     } catch (error) {
       if (browser) {
         // if browser still opened - close it
         await browser.close();
       }
-      return { ok: false, error };
+      const niceError = `Offer page accessed successfully but failed getting offer details. Error: ${error}`;
+      return { ok: false, niceError };
     }
+
+    // if offer scraped properly - returning offer with all its details
+    return { ok: true, data: new Offer(url, details) };
   }
 
   async scrapAttemptWithRetry(retriesLeft) {
