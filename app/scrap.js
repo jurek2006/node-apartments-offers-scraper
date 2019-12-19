@@ -1,5 +1,7 @@
 const puppeteer = require('puppeteer');
 const utils = require('./utils');
+const { OFFERS_FILE } = require('../config/config');
+const { readJsonFile } = require('../utils/fileSystemUtils');
 const gSheets = require('./gsheets');
 const Offer = require('../models/offer');
 const ApartmentRentOffer = require('../models/apartmentRentOffer');
@@ -172,62 +174,63 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
 };
 
 (async () => {
-  // let browser = await puppeteer.launch({ headless: true });
-  // const page = await browser.newPage();
-  // page.setUserAgent(
-  //   'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0'
-  // );
+  let browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
+  page.setUserAgent(
+    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0'
+  );
 
-  // const allOffersList = await goToListPageAndScrapRecursively(
-  //   'https://www.olx.pl/nieruchomosci/mieszkania/wynajem/olawa/',
-  //   page
-  // );
+  const allOffersList = await goToListPageAndScrapRecursively(
+    'https://www.olx.pl/nieruchomosci/mieszkania/wynajem/olawa/',
+    page
+  );
 
-  // console.log(`all found offers (${allOffersList.length})`, allOffersList);
-  // const filteredOnlyOlx = allOffersList
-  //   .filter(el => el.url.includes("www.olx.pl"))
+  if (browser) {
+    // if browser still opened - close it
+    await browser.close();
+  }
+
+  console.log(`all found offers (${allOffersList.length})`, allOffersList);
+  const filteredOnlyOlx = allOffersList
+    .filter(el => el.url.includes('www.olx.pl'))
+    .map(el => el.url);
   //   .slice(0, 3);
 
-  // console.log("filtered:", filteredOnlyOlx);
+  // console.log('filtered:', filteredOnlyOlx);
 
   // TESTING
-  const filteredOnlyOlx = [
-    {
-      title: 'Wynajmę mieszkanie Zaciszna',
-      url:
-        'https://www.olx.pl/oferta/wynajme-mieszkanie-zaciszna-CID3-IDCp7HU.html#7ad347de0f'
-    },
-    {
-      title: 'Wynajmę mieszkanie w Oławie 55m2',
-      url:
-        'https://www.olx.pl/oferta/wynajme-mieszkanie-w-olawie-55m2-CID3-IDCIeb7.html#7ad347de0f'
-    },
-    {
-      title: 'Wynajmę mieszkanie w Oławie !!!',
-      url:
-        'https://www.olx.pl/oferta/wynajme-mieszkanie-w-olawie-CID3-IDAFMGG.html#7ad347de0f'
-    }
-  ];
+  // const filteredOnlyOlx = [
+  //   {
+  //     title: 'Wynajmę mieszkanie Zaciszna',
+  //     url:
+  //       'https://www.olx.pl/oferta/wynajme-mieszkanie-zaciszna-CID3-IDCp7HU.html#7ad347de0f'
+  //   },
+  //   {
+  //     title: 'Wynajmę mieszkanie w Oławie 55m2',
+  //     url:
+  //       'https://www.olx.pl/oferta/wynajme-mieszkanie-w-olawie-55m2-CID3-IDCIeb7.html#7ad347de0f'
+  //   },
+  //   {
+  //     title: 'Wynajmę mieszkanie w Oławie !!!',
+  //     url:
+  //       'https://www.olx.pl/oferta/wynajme-mieszkanie-w-olawie-CID3-IDAFMGG.html#7ad347de0f'
+  //   }
+  // ];
 
-  // console.log("wait");
-  // await page.waitFor(1000);
-  // console.log("wait end");
-  // await browser.close();
-
-  const allResults = [];
-  for (const offerDetailsLink of filteredOnlyOlx) {
-    // const redOfferData = await scrapOffer(offerDetailsLink, 2).catch(() => {
-    //   console.log("Can't scrap offer's details");
-    // });
-    // console.log("red offer data", redOfferData);
-    // allResults.push(new Offer(redOfferData));
-    console.log('offerDetailsLink', offerDetailsLink);
-    const details = await new ApartmentRentOffer(
-      offerDetailsLink
-    ).goToOfferPageAndScrap();
-    console.log('details', details);
-    console.log('----------------------------------------------------');
-  }
+  // const allResults = [];
+  // for (const offerDetailsLink of filteredOnlyOlx) {
+  //   // const redOfferData = await scrapOffer(offerDetailsLink, 2).catch(() => {
+  //   //   console.log("Can't scrap offer's details");
+  //   // });
+  //   // console.log("red offer data", redOfferData);
+  //   // allResults.push(new Offer(redOfferData));
+  //   console.log('offerDetailsLink', offerDetailsLink);
+  //   const details = await new ApartmentRentOffer(
+  //     offerDetailsLink
+  //   ).goToOfferPageAndScrap();
+  //   console.log('details', details);
+  //   console.log('----------------------------------------------------');
+  // }
 
   // await utils.saveJsonFile(
   //   `./output/result-${utils.getTimeStamp()}.json`,
@@ -238,16 +241,37 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
   //   allResults
   // );
 
-  // await gSheets
-  //   .saveToGoogleSheets(
-  //     utils.convertCsvToArray(utils.convertDataToCsv(allResults))
-  //   )
-  //   .catch(err => console.log("błąd GS", err));
+  await Offer.scrapAll(filteredOnlyOlx);
 
-  console.log('All results:', allResults);
-  Offer.saveAll(allResults);
-  // const found = await Offer.readAll();
-  const found = await ApartmentRentOffer.readAll();
+  // read saved offers
+  const redJsonResult = await readJsonFile(
+    OFFERS_FILE.filename,
+    OFFERS_FILE.path
+  );
+  if (!redJsonResult.ok) {
+    console.log('Cant read data');
+    return;
+  }
 
-  console.log('found', found);
+  // when data red properly
+  const allResults = redJsonResult.data.map(item => item.details);
+  console.log('allResults', allResults);
+
+  await gSheets.clearGoogleSheets().catch(err => console.log('błąd GS', err));
+
+  await gSheets
+    .saveToGoogleSheets(
+      utils.convertCsvToArray(utils.convertDataToCsv(allResults))
+    )
+    .catch(err => console.log('błąd GS', err));
+
+  await gSheets.formatInGoogleSheets();
+  // await gSheets.sortInGoogleSheets().catch(err => console.log('błąd GS', err));
+
+  // console.log('All results:', allResults);
+  // Offer.saveAll(allResults);
+  // // const found = await Offer.readAll();
+  // const found = await ApartmentRentOffer.readAll();
+
+  // console.log('found', found);
 })();

@@ -164,6 +164,20 @@ module.exports = class Offer {
     }
 
     try {
+      details.title = await page.evaluate(
+        () => document.querySelector('.offer-titlebox h1').innerText
+      );
+
+      // added date & time
+      const offerAdded = utils.getTimeAndDate(
+        await page.evaluate(
+          () => document.querySelector('.offer-titlebox__details em').innerText
+        )
+      );
+
+      details.addedDate = offerAdded.date;
+      details.addedTime = offerAdded.time;
+
       // price;
       details.price = utils.convertDataToNumber(
         await page
@@ -200,12 +214,15 @@ module.exports = class Offer {
       );
 
       // // add price with rent
-      details.priceWithRent =
-        details.price + detailsTable['Czynsz (dodatkowo)'];
+      details.priceWithRent = utils.convertNumberToStringWithDecimalSeparator(
+        details.price + detailsTable['Czynsz (dodatkowo)']
+      );
 
       // add properties from detailsTable to details
       // details = Object.assign(details, detailsTable);
-      details.rent = detailsTable['Czynsz (dodatkowo)'];
+      details.rent = utils.convertNumberToStringWithDecimalSeparator(
+        detailsTable['Czynsz (dodatkowo)']
+      );
       details.area = detailsTable.Powierzchnia;
       details.rooms = detailsTable['Liczba pokoi'];
       details.furniture = detailsTable.Umeblowane;
@@ -222,17 +239,6 @@ module.exports = class Offer {
         () => document.querySelector('.offer-user__details h4 a').href
       );
 
-      // added date & time
-
-      const offerAdded = utils.getTimeAndDate(
-        await page.evaluate(
-          () => document.querySelector('.offer-titlebox__details em').innerText
-        )
-      );
-
-      details.addedDate = offerAdded.date;
-      details.addedTime = offerAdded.time;
-
       await browser.close();
     } catch (error) {
       if (browser) {
@@ -244,7 +250,45 @@ module.exports = class Offer {
     }
 
     // if offer scraped properly - returning offer with all its details
-    return { ok: true, data: new Offer(url, details) };
+
+    // change properties order
+    const changePropertiesOrder = ({
+      addedDate,
+      url,
+      title,
+      price,
+      priceWithRent,
+      rent,
+      area,
+      rooms,
+      furniture,
+      floor,
+      building,
+      offerType,
+      userName,
+      userLink,
+      addedTime,
+      offerID
+    }) => ({
+      addedDate,
+      url,
+      title,
+      price,
+      priceWithRent,
+      rent,
+      area,
+      rooms,
+      furniture,
+      floor,
+      building,
+      offerType,
+      userName,
+      userLink,
+      addedTime,
+      offerID
+    });
+
+    return { ok: true, data: new Offer(url, changePropertiesOrder(details)) };
   }
 
   async scrapAttemptWithRetry(retriesLeft) {
