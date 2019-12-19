@@ -159,8 +159,7 @@ exports.formatInGoogleSheets = async () => {
         sheetId: 1549031368,
         startRowIndex: 1, // omit first row (columns' names)
         // endRowIndex: 10, // to the end
-        startColumnIndex: 0,
-        endColumnIndex: 15
+        startColumnIndex: 0
       },
       sortSpecs: [
         {

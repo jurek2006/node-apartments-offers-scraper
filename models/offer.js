@@ -92,6 +92,25 @@ module.exports = class Offer {
     }
   }
 
+  // update status in all saved offers
+  static async updateStatusForAll(newStatus) {
+    // read all offers from file to array
+    const allRedOffers = await Offer.readAll();
+    if (!allRedOffers.ok) return allRedOffers;
+
+    // if red properly
+    const updatedAllOffers = allRedOffers.data.map(currOffer => {
+      currOffer.details.status = newStatus;
+      return currOffer;
+    });
+
+    const savingStatus = await Offer.saveAll(updatedAllOffers);
+    // if Offer.saveAll failed return {ok: false, error}
+    if (!savingStatus.ok) return savingStatus;
+
+    return { ok: true }; // if saving succeeded - return with data of saved offer
+  }
+
   returnRandomUserAgent() {
     const userAgents = [
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36',
@@ -349,6 +368,8 @@ module.exports = class Offer {
 
     if (scrapedOffer) {
       verboseLog('scrapedOffer', scrapedOffer);
+
+      scrapedOffer.details.status = 'new'; // temp - add new status
 
       const savingStatus = await scrapedOffer.save();
       if (!savingStatus.ok) {

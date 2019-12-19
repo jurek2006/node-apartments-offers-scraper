@@ -53,6 +53,7 @@ const offersArray = [testingOffer, testingOffer2];
 
 (async () => {
   // const savingStatus = await Offer.saveAll(offersArray);
-  const savingStatus = await testingOffer.save();
-  console.log(savingStatus);
+  // const savingStatus = await testingOffer.save();
+  // console.log(savingStatus);
+  Offer.updateStatusForAll('xYx');
 })();

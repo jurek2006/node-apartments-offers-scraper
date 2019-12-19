@@ -241,6 +241,10 @@ const goToOfferPageAndScrap = async ({ url, title }) => {
   //   allResults
   // );
 
+  // change status for already saved offers
+  await Offer.updateStatusForAll('');
+
+  // scrap offers
   await Offer.scrapAll(filteredOnlyOlx);
 
   // read saved offers
